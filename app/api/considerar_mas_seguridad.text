@@ -1,0 +1,108 @@
+Pensado durante 7s
+
+¡Buenísima pregunta!
+Cuando ya tengas auth en tu backend, lo más recomendable es:
+
+Recomendación rápida
+
+Haz la transacción de autenticación en el servidor de Next.js (route handler / API), no en el cliente.
+
+¿Por qué?
+
+Cookies HttpOnly seguras: solo el servidor puede escribirlas; el JS del navegador no las puede leer (mejor contra XSS).
+
+No expones credenciales ni tokens en el cliente (ni en localStorage).
+
+Menos CORS y fugas: tu app/api/login funciona de “proxy” hacia tu backend.
+
+Middleware lee la cookie y protege rutas sin depender de Zustand.
+
+Patrón recomendado (proxy server-side)
+1) Cliente → tu API (Next)
+// app/login/page.tsx (cliente)
+const res = await fetch("/api/login", {
+  method: "POST",
+  headers: {"Content-Type": "application/json"},
+  body: JSON.stringify({ username, password }),
+});
+
+2) Tu API (Next) → Backend real
+// app/api/login/route.ts
+import { NextResponse } from "next/server";
+
+export async function POST(req: Request) {
+  const body = await req.json();
+
+  // Llama a tu backend real
+  const r = await fetch(process.env.BACKEND_URL + "/auth/login", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(body),
+  });
+
+  if (!r.ok) return NextResponse.json({ ok:false }, { status: 401 });
+
+  const { access_token, refresh_token, user } = await r.json();
+
+  // (A) Guardar tokens en cookies HttpOnly
+  const res = NextResponse.json({ ok: true, user });
+  res.cookies.set("token", access_token, {
+    httpOnly: true, secure: process.env.NODE_ENV === "production",
+    sameSite: "lax", path: "/", maxAge: 60 * 60 * 2, // 2h
+  });
+  // Opcional: refresh cookie
+  res.cookies.set("rt", refresh_token, {
+    httpOnly: true, secure: process.env.NODE_ENV === "production",
+    sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 7, // 7d
+  });
+  return res;
+}
+
+3) Middleware protege rutas leyendo la cookie
+// middleware.ts
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+
+const PROTECTED = ["/evaluador-dashboard", "/iotgps-dashboard"];
+
+export function middleware(req: NextRequest) {
+  const token = req.cookies.get("token")?.value;
+  const path = req.nextUrl.pathname;
+
+  if (!token && PROTECTED.some(p => path.startsWith(p))) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/login";
+    url.search = `?next=${encodeURIComponent(path)}`;
+    return NextResponse.redirect(url);
+  }
+  return NextResponse.next();
+}
+
+4) Logout server-side
+// app/api/logout/route.ts
+import { NextResponse } from "next/server";
+
+export async function POST() {
+  const res = NextResponse.json({ ok: true });
+  res.cookies.set("token", "", { path: "/", expires: new Date(0) });
+  res.cookies.set("rt", "", { path: "/", expires: new Date(0) });
+  return res;
+}
+
+¿Cuándo SÍ podrías hacerlo en el cliente?
+
+Si tu backend ya setea la cookie HttpOnly directamente (misma base de dominio) y evita CORS. En ese caso el cliente puede llamar directo a https://api.tu-dominio.com/auth/login y el backend coloca la cookie.
+
+Aún así, el patrón de proxy en Next te da más control, evita exponer URLs internas y simplifica CORS.
+
+Resumen (decisión)
+
+98% de los casos: usa API server (route handlers) para loguear/renovar tokens y escribir cookies HttpOnly.
+
+Deja Zustand para la UI (mostrar nombre, estado, botón salir), pero no para guardar tokens.
+
+Middleware protege rutas leyendo cookies.
+
+Si quieres, te adapto el ejemplo a tu backend exacto (ruta, payload y nombres de campos) para que pegues y funcione a la primera.
+
+ChatGP
