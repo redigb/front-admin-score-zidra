@@ -2,27 +2,23 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+
 import {
   Eye,
   EyeOff,
   Wifi,
-  MapPin,
   Shield,
-  Zap,
   Database,
   Activity,
 } from "lucide-react";
+
 import { useAuthStore } from "@/service/store/auth";
 
-// Si usas shadcn:
+// shadcn
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 
-// ------------------------------------------------------
-// 👇 Componente que contiene toda la lógica y el JSX
-// ------------------------------------------------------
 function LoginContent() {
   const router = useRouter();
   const params = useSearchParams();
@@ -32,7 +28,6 @@ function LoginContent() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [stayLoggedIn, setStayLoggedIn] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -50,7 +45,6 @@ function LoginContent() {
         body: JSON.stringify({
           username: email,
           password,
-          remember: stayLoggedIn,
         }),
       });
 
@@ -70,207 +64,161 @@ function LoginContent() {
 
       const { user } = await res.json();
       setAuth({ isAuth: true, profile: user });
-
       router.replace(next);
       router.refresh();
-    } catch (error) {
+    } catch {
       setErr("Error de red. Inténtalo de nuevo.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // ------------------------------------------------------
-  // 👇 JSX de la página (idéntico al tuyo)
-  // ------------------------------------------------------
+  // =============================
+  //   UI COMPLETA VERDE PREMIUM
+  // =============================
   return (
-    <div className="min-h-screen flex bg-gradient-to-br from-slate-50 to-blue-50">
-      {/* Panel izquierdo (branding IoT) */}
-      <div className="flex-1 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-900 p-12 flex flex-col justify-between text-white relative overflow-hidden">
-        {/* Fondo animado */}
-        <div className="absolute inset-0">
-          <div className="absolute top-20 left-20 w-3 h-3 bg-cyan-400 rounded-full animate-pulse opacity-60"></div>
-          <div className="absolute top-40 right-32 w-2 h-2 bg-blue-300 rounded-full animate-bounce opacity-40 animation-delay-1000"></div>
-          <div className="absolute bottom-60 left-16 w-4 h-4 bg-indigo-300 rounded-full animate-pulse opacity-50 animation-delay-2000"></div>
-          <div className="absolute top-1/3 right-20 w-2 h-2 bg-cyan-300 rounded-full animate-bounce opacity-30 animation-delay-3000"></div>
+    <div className="min-h-screen flex bg-slate-50">
 
-          <div className="absolute inset-0 opacity-10">
-            <div className="grid grid-cols-8 grid-rows-8 h-full w-full">
-              {Array.from({ length: 64 }).map((_, i) => (
-                <div key={i} className="border border-blue-300/20" />
-              ))}
+      {/* IZQUIERDA: Branding Verde Premium */}
+      <div className="flex-1 p-12 text-white bg-gradient-to-br from-emerald-700 via-emerald-800 to-slate-900 relative overflow-hidden flex flex-col justify-between">
+
+        {/* Círculos blur */}
+        <div className="absolute top-20 left-20 w-48 h-48 rounded-full bg-emerald-500/20 blur-3xl"></div>
+        <div className="absolute bottom-32 right-20 w-40 h-40 rounded-full bg-emerald-400/20 blur-2xl"></div>
+        <div className="absolute top-1/3 right-48 w-52 h-52 rounded-full bg-emerald-300/10 blur-3xl"></div>
+
+        {/* LOGO + TEXTOS */}
+  <div className="relative z-10 space-y-6 animate-fade-in">
+
+  {/* Branding principal */}
+  <div className="flex items-center space-x-3">
+    <div className="w-12 h-12 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
+      <Activity className="w-6 h-6 text-white" />
+    </div>
+    <h1 className="text-4xl font-bold tracking-tight">
+      ZidraScore
+    </h1>
+  </div>
+
+  {/* Plataforma Inteligente */}
+  <div className="space-y-2 max-w-md">
+    <h2 className="text-3xl font-semibold text-white">
+      Plataforma Inteligente
+    </h2>
+
+    {/* Descripción correcta */}
+    <p className="text-emerald-100/90 text-lg leading-relaxed">
+      IoT & GPS Monitoring en tiempo real para artefactos. 
+      Rastreo seguro, preciso y centralizado.
+    </p>
+  </div>
+</div>
+
+        {/* Ilustración IoT minimal */}
+        <div className="relative z-10 flex justify-center py-10 animate-float">
+          <div className="w-64 h-40 rounded-2xl bg-slate-800 border border-emerald-600/30 shadow-xl p-6 flex flex-col justify-between">
+            <div className="space-y-2">
+              <div className="w-3/4 h-1 bg-emerald-400/60 rounded"></div>
+              <div className="w-2/3 h-1 bg-emerald-300/40 rounded"></div>
+              <div className="w-1/2 h-1 bg-emerald-300/30 rounded"></div>
             </div>
-          </div>
-
-          <div className="absolute top-1/4 left-1/4 w-32 h-0.5 bg-gradient-to-r from-cyan-400 to-transparent animate-pulse"></div>
-          <div className="absolute bottom-1/3 right-1/4 w-24 h-0.5 bg-gradient-to-l from-blue-400 to-transparent animate-pulse animation-delay-1000"></div>
-        </div>
-
-        {/* Branding */}
-        <div className="relative z-10 animate-fade-in">
-          <div className="flex items-center space-x-3 mb-8">
-            <div className="w-12 h-12 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center shadow-lg">
-              <Activity className="w-6 h-6 text-white" />
-            </div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-white to-cyan-200 bg-clip-text text-transparent">
-              ZidraScore
-            </h1>
-          </div>
-
-          <div className="space-y-4">
-            <h2 className="text-3xl font-bold leading-tight bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
-              Plataforma Inteligente de
-            </h2>
-            <div className="flex items-center space-x-2">
-              <span className="text-2xl font-semibold text-cyan-200">IoT</span>
-              <span className="text-xl text-white/80">&</span>
-              <span className="text-2xl font-semibold text-blue-200">
-                Evaluación de Riesgo
-              </span>
-            </div>
-            <p className="text-lg opacity-90 leading-relaxed max-w-md">
-              Monitoreo en tiempo real y análisis predictivo para la toma de
-              decisiones inteligentes.
-            </p>
-          </div>
-        </div>
-
-        {/* Visual IoT */}
-        <div className="relative z-10 flex justify-center animate-float py-10">
-          <div className="relative">
-            <div className="w-56 h-80 bg-gradient-to-b from-slate-800 to-slate-900 rounded-3xl shadow-2xl border border-slate-600 relative overflow-hidden">
-              <div className="m-4 h-72 bg-gradient-to-b from-blue-900 to-indigo-900 rounded-2xl p-4 relative">
-                <div className="flex justify-between items-center mb-4">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                    <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse animation-delay-500"></div>
-                    <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse animation-delay-1000"></div>
-                  </div>
-                  <Wifi className="w-4 h-4 text-cyan-400 animate-pulse" />
-                </div>
-                <div className="space-y-2">
-                  <div className="h-1 bg-gradient-to-r from-cyan-400 to-blue-500 rounded animate-pulse"></div>
-                  <div className="h-1 bg-gradient-to-r from-blue-400 to-indigo-500 rounded animate-pulse animation-delay-300"></div>
-                  <div className="h-1 bg-gradient-to-r from-indigo-400 to-purple-500 rounded animate-pulse animation-delay-600"></div>
-                </div>
-                <div className="absolute bottom-4 left-4 right-4 flex justify-between">
-                  <MapPin className="w-5 h-5 text-cyan-300 animate-bounce animation-delay-1000" />
-                  <Shield className="w-5 h-5 text-blue-300 animate-bounce animation-delay-1500" />
-                  <Database className="w-5 h-5 text-indigo-300 animate-bounce animation-delay-2000" />
-                </div>
-              </div>
-            </div>
-
-            <div className="absolute -top-6 -right-8 w-16 h-16 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl shadow-xl animate-float animation-delay-1000 flex items-center justify-center">
-              <Zap className="w-8 h-8 text-white" />
-            </div>
-            <div className="absolute -bottom-4 -left-6 w-12 h-12 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-xl shadow-lg animate-float animation-delay-2000 flex items-center justify-center">
-              <Activity className="w-6 h-6 text-white" />
+            <div className="flex justify-between">
+              <Wifi className="text-emerald-400 w-5 h-5" />
+              <Shield className="text-emerald-300 w-5 h-5" />
+              <Database className="text-emerald-300 w-5 h-5" />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Panel derecho: formulario */}
-      <div className="flex-1 bg-white flex items-center justify-center p-12 relative">
-        <div className="absolute top-20 right-20 w-32 h-32 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-full opacity-30 animate-pulse"></div>
-        <div className="absolute bottom-32 left-16 w-24 h-24 bg-gradient-to-br from-cyan-50 to-blue-50 rounded-full opacity-20 animate-pulse animation-delay-2000"></div>
+      {/* DERECHA: Tarjeta de Login */}
+      <div className="flex-1 flex items-center justify-center p-12">
+        <div className="bg-white w-full max-w-md rounded-2xl shadow-xl p-10 border border-slate-100 space-y-8 animate-slide-up">
 
-        <div className="w-full max-w-md space-y-8 relative z-10 animate-slide-up">
-          <div className="text-center">
-            <h2 className="text-4xl font-bold bg-gradient-to-r from-slate-800 to-blue-600 bg-clip-text text-transparent mb-3">
+          <div className="text-center space-y-2">
+            <h2 className="text-3xl font-bold text-slate-800">
               Iniciar Sesión
             </h2>
-            <p className="text-slate-600 text-lg">
+            <p className="text-slate-500">
               Accede a tu plataforma de monitoreo y análisis
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+
             {err && (
               <div className="rounded-lg border border-red-200 bg-red-50 text-red-700 px-4 py-3 text-sm">
                 {err}
               </div>
             )}
 
-            <div className="animate-fade-in animation-delay-500">
-              <Label
-                htmlFor="email"
-                className="block text-sm font-semibold text-slate-700 mb-3"
-              >
-                Usuario / Correo
+            {/* Email */}
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold text-slate-600 uppercase">
+                Correo
               </Label>
               <Input
-                id="email"
-                type="text"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                className="h-12 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                 placeholder="usuario@correo.com"
-                required
-                className="w-full px-4 py-4 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 text-lg bg-slate-50/50 hover:bg-white"
               />
             </div>
 
-            <div className="animate-fade-in animation-delay-700">
-              <Label
-                htmlFor="password"
-                className="block text-sm font-semibold text-slate-700 mb-3"
-              >
+            {/* Password */}
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold text-slate-600 uppercase">
                 Contraseña
               </Label>
+
               <div className="relative">
                 <Input
-                  id="password"
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••••"
-                  required
-                  className="w-full px-4 py-4 pr-14 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 text-lg bg-slate-50/50 hover:bg-white"
+                  className="h-12 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 pr-12"
+                  placeholder="••••••••"
                 />
-                <Button
+                <button
                   type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 hover:bg-slate-100 rounded-lg"
                   onClick={() => setShowPassword((s) => !s)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                 >
                   {showPassword ? (
-                    <EyeOff className="w-5 h-5 text-slate-500" />
+                    <EyeOff className="w-5" />
                   ) : (
-                    <Eye className="w-5 h-5 text-slate-500" />
+                    <Eye className="w-5" />
                   )}
-                </Button>
+                </button>
               </div>
             </div>
 
+            {/* Submit */}
             <Button
               type="submit"
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-lg animate-fade-in animation-delay-1100 text-lg disabled:opacity-70"
               disabled={isLoading}
+              className="w-full bg-emerald-600 hover:bg-emerald-700 h-12 rounded-lg text-white font-semibold shadow-md transition disabled:opacity-60"
             >
               {isLoading ? (
-                <span className="inline-flex items-center gap-2">
-                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Iniciando sesión...
+                <span className="flex items-center gap-2">
+                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                  Iniciando...
                 </span>
               ) : (
-                "Acceder a la Plataforma"
+                "Acceder"
               )}
             </Button>
           </form>
+
         </div>
       </div>
     </div>
   );
 }
 
-// ------------------------------------------------------
-// 👇 Envolvemos en Suspense para evitar el error de build
-// ------------------------------------------------------
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div>Cargando página de inicio de sesión...</div>}>
+    <Suspense fallback={<div>Cargando login...</div>}>
       <LoginContent />
     </Suspense>
   );

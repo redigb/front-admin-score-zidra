@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { dispositivosService } from "@/service/service-dispositivos";
 import { Dispositivo } from "@/interface/dispositivos";
 
-// 🔹 Obtener todos los dispositivos
+// Obtener todos los dispositivos
 export function useDispositivos() {
     return useQuery<Dispositivo[]>({
         queryKey: ["dispositivos"],
@@ -11,7 +11,7 @@ export function useDispositivos() {
     });
 }
 
-// 🔹 Obtener un dispositivo por ID
+// Obtener un dispositivo por ID
 export function useDispositivoById(id: number) {
     return useQuery<Dispositivo>({
         queryKey: ["dispositivos", id],
@@ -20,7 +20,7 @@ export function useDispositivoById(id: number) {
     });
 }
 
-// 🔹 Obtener un dispositivo por IMEI
+// Obtener un dispositivo por IMEI
 export function useDispositivoByImei(imei: string) {
     return useQuery<Dispositivo>({
         queryKey: ["dispositivos", "imei", imei],

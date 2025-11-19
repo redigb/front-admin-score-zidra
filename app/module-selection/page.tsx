@@ -14,7 +14,7 @@ export default function ModuleSelection() {
 
     const handleModuleSelection = (module: "evaluacion" | "gps") => {
         if (module === "evaluacion") {
-            router.replace("/evaluador/solicitudes");
+            router.replace("/evaluador/dashboard");
         } else {
             router.replace("/iotigps/dashboard");
         }

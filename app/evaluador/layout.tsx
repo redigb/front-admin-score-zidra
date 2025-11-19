@@ -11,7 +11,6 @@ export default function DashboardLayout({
     <div className="flex h-screen bg-gray-50 dark:bg-neutral-950">
       {/* Sidebar fijo */}
       <SidebarEvaluador />
-
       {/* Contenedor principal */}
       <div className="flex flex-col flex-1">
         {/* Header fijo */}
