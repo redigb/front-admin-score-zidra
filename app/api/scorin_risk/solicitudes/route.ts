@@ -1,9 +1,12 @@
 const API = process.env.PRIVATE_API_URL;
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    // 1. Llamamos al proxy interno de preclientes
-    const preRes = await fetch(`http://localhost:3000/api/scorin_risk/pre_clientes`, {
+    // Obtener origin automático
+    const { origin } = new URL(request.url);
+
+    // 1. Proxy interno
+    const preRes = await fetch(`${origin}/api/scorin_risk/pre_clientes`, {
       cache: "no-store",
     });
 
@@ -11,18 +14,22 @@ export async function GET() {
       return new Response("Error cargando preclientes", { status: 500 });
     }
 
-    const preclientes = await preRes.json();
-    let solicitudes: any[] = [];
+    // Tipado opcional para los preclientes
+    const preclientes: Array<any> = await preRes.json();
 
-    // 2. Pedimos solicitudes a la API privada
+    const solicitudes: Array<any> = [];
+
+    // 2. Llamada a API privada
     for (const p of preclientes) {
-      const res = await fetch(`${API}/evaluador/pre-cliente/${p.id}/solicitudes`, {
-        cache: "no-store",
-      });
+      const res = await fetch(
+        `${API}/evaluador/pre-cliente/${p.id}/solicitudes`,
+        { cache: "no-store" }
+      );
 
       if (!res.ok) continue;
 
-      const solList = await res.json();
+      // Tipado de solList
+      const solList: Array<any> = await res.json();
 
       const enriched = solList.map((sol: any) => ({
         ...sol,
