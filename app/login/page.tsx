@@ -88,31 +88,42 @@ function LoginContent() {
         <div className="absolute top-1/3 right-48 w-52 h-52 rounded-full bg-emerald-300/10 blur-3xl"></div>
 
         {/* LOGO + TEXTOS */}
-  <div className="relative z-10 space-y-6 animate-fade-in">
+        <div className="relative z-10 space-y-6 animate-fade-in">
 
-  {/* Branding principal */}
-  <div className="flex items-center space-x-3">
-    <div className="w-12 h-12 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
-      <Activity className="w-6 h-6 text-white" />
-    </div>
-    <h1 className="text-4xl font-bold tracking-tight">
-      ZidraScore
-    </h1>
-  </div>
+          {/* Branding principal */}
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
+              <Activity className="w-6 h-6 text-white" />
+            </div>
+            <h1 className="text-4xl font-bold tracking-tight">
+              ZidraScore
+            </h1>
+          </div>
 
-  {/* Plataforma Inteligente */}
-  <div className="space-y-2 max-w-md">
-    <h2 className="text-3xl font-semibold text-white">
-      Plataforma Inteligente
-    </h2>
+          <div className="space-y-2 max-w-md">
+            <h2 className="text-3xl font-semibold text-white">
+              Scoring Crediticio
+            </h2>
+            {/* Descripción correcta */}
+            <p className="text-emerald-100/90 text-lg leading-relaxed">
+              Solucion avanzada de análisis de datos para evaluar y predecir
+              el riesgo crediticio con precisión.
+            </p>
+          </div>
 
-    {/* Descripción correcta */}
-    <p className="text-emerald-100/90 text-lg leading-relaxed">
-      IoT & GPS Monitoring en tiempo real para artefactos. 
-      Rastreo seguro, preciso y centralizado.
-    </p>
-  </div>
-</div>
+          {/* Plataforma Inteligente */}
+          <div className="space-y-2 max-w-md">
+            <h2 className="text-3xl font-semibold text-white">
+              Plataforma Inteligente
+            </h2>
+
+            {/* Descripción correcta */}
+            <p className="text-emerald-100/90 text-lg leading-relaxed">
+              IoT & GPS Monitoring en tiempo real para artefactos.
+              Rastreo seguro, preciso y centralizado.
+            </p>
+          </div>
+        </div>
 
         {/* Ilustración IoT minimal */}
         <div className="relative z-10 flex justify-center py-10 animate-float">
