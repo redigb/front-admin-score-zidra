@@ -1,30 +1,96 @@
-// app/api/bff/[...path]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
+// Asegúrate de que apunte a tu backend real
+const API_URL = process.env.PRIVATE_API_URL || "http://localhost:3050/api";
+
 export async function GET(
   req: NextRequest,
-  context: { params: Promise<{ path: string[] }> } // 👈 cambia aquí
+  { params }: { params: Promise<{ path: string[] }> }
 ) {
-  const { path } = await context.params; // 👈 y aquí
+  return handleRequest(req, await params);
+}
 
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ path: string[] }> }
+) {
+  return handleRequest(req, await params);
+}
+
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ path: string[] }> }
+) {
+  return handleRequest(req, await params);
+}
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ path: string[] }> }
+) {
+  return handleRequest(req, await params);
+}
+
+async function handleRequest(req: NextRequest, params: { path: string[] }) {
+  const { path } = params;
+  // 1. Debug de Cookies
   const cookieStore = await cookies();
-  const token = cookieStore.get("access_token")?.value;
+  const allCookies = cookieStore.getAll();
+  //console.log(`🔍 [Proxy] Petición a: /${path.join("/")}`);
+  //console.log(`🍪 [Proxy] Cookies disponibles: [${allCookies.map(c => c.name).join(", ")}]`);
+  // INTENTO DE RECUPERACIÓN
+  let token = cookieStore.get("access_token")?.value;
 
   if (!token) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    token = cookieStore.get("token")?.value;
+  }
+  // MODIFICACIÓN: Token opcional para debugging
+  // Ya no bloqueamos si no hay token.
+  if (!token) {
+    //console.warn("⚠️ [Proxy] No se encontró token, pero se enviará la petición sin auth (Modo Debug).");
+    // Comentado para permitir el paso sin token:
+    // return NextResponse.json({ error: "No token found in cookies" }, { status: 401 });
+  }
+  // 2. Construir URL
+  const destinationUrl = `${API_URL}/${path.join("/")}${req.nextUrl.search}`;
+  // 3. Configurar Headers
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+  };
+  // Solo agregamos el header Authorization SI existe el token
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  const fetchOptions: RequestInit = {
+    method: req.method,
+    headers,
+  };
+  // 4. Body
+  if (req.method !== "GET" && req.method !== "HEAD") {
+    try {
+      const body = await req.json();
+      fetchOptions.body = JSON.stringify(body);
+    } catch (e) {
+      // ignore empty body
+    }
   }
 
-  // Reconstruir la URL hacia tu backend
-  const url = `${process.env.API_URL}/${path.join("/")}${req.nextUrl.search}`;
+  try {
+    // 5. Llamada al Backend
+    const response = await fetch(destinationUrl, fetchOptions);
 
-  const backendRes = await fetch(url, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+    const data = response.status === 204 ? null : await response.json();
 
-  const data = await backendRes.json();
-  return NextResponse.json(data, { status: backendRes.status });
+    if (!response.ok) {
+      return NextResponse.json(data, { status: response.status });
+    }
+    return NextResponse.json(data, { status: 200 });
+  } catch (error) {
+    // console.error("💥 [Proxy] Error:", error);
+    return NextResponse.json(
+      { error: "Proxy Error" },
+      { status: 502 }
+    );
+  }
 }
