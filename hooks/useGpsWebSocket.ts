@@ -1,4 +1,4 @@
-// hooks/useGpsWebSocket.ts
+//hooks/useGpsWebSocket.ts
 "use client";
 
 import { useEffect, useRef } from "react";
@@ -13,11 +13,10 @@ export function useGpsWebSocket(
     const stompClient = useRef<Client | null>(null);
 
     useEffect(() => {
-        // 🔥 Salir temprano si no está en el navegador
+
         if (typeof window === 'undefined') return;
         if (!gpsDeviceId || !enabled) return;
 
-        // 🔥 Importar SockJS dinámicamente solo cuando se necesita
         import('sockjs-client').then((SockJSModule) => {
             const SockJS = SockJSModule.default;
             const SocketURL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3050/ws";
