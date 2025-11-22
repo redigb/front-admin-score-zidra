@@ -43,8 +43,6 @@ const Popup = dynamic(() => import("react-leaflet").then((mod) => mod.Popup), { 
 const Tooltip = dynamic(() => import("react-leaflet").then((mod) => mod.Tooltip), { ssr: false });
 const DevicePopup = dynamic(() => import("@/components/my_components/map/DevicePopup").then((mod) => ({ default: mod.DevicePopup })), { ssr: false });
 
-
-
 export default function MapaDispositivos() {
 
     const { data: dispositivos = [], isLoading: loadingDispositivos } = useDispositivos();
@@ -68,15 +66,12 @@ export default function MapaDispositivos() {
         }
     }, []);
 
-
     useEffect(() => {
         if (!isClient) return;
         import("@/components/my_components/map/DevicePopup").then((mod) => {
             setBreathingIcon(() => mod.createBreathingIcon);
         });
     }, [isClient]);
-
-
 
     useEffect(() => {
         if (!selectedDevice && dispositivos.length > 0) {

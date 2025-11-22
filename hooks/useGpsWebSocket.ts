@@ -5,103 +5,75 @@ import { Client, IMessage } from "@stomp/stompjs";
 import { GpsTelemetria } from "@/interface/telemetria-dispostivo";
 
 export function useGpsWebSocket(
-    gpsDeviceId: number | null,
-    onMessage: (telemetria: GpsTelemetria) => void,
-    enabled: boolean
+  gpsDeviceId: number | null,
+  onMessage: (telemetria: GpsTelemetria) => void,
+  enabled: boolean
 ) {
-    const stompClientRef = useRef<Client | null>(null);
-    const reconnectTimer = useRef<NodeJS.Timeout | null>(null);
-    const onMessageRef = useRef(onMessage);
+  // Referencia para mantener la instancia del cliente STOMP sin causar re-renders
+  const stompClient = useRef<Client | null>(null);
 
-    // Mantiene onMessage estable
-    useEffect(() => {
-        onMessageRef.current = onMessage;
-    }, [onMessage]);
+  // Referencia para el callback, evita reconexiones si la función onMessage cambia
+  const onMessageRef = useRef(onMessage);
 
-    useEffect(() => {
-        if (!enabled || !gpsDeviceId || typeof window === "undefined") {
-            // Si no hay ID o no está habilitado, desconectar.
-            if (stompClientRef.current) {
-                stompClientRef.current.deactivate();
-                stompClientRef.current = null;
+  // Actualizamos la ref del callback cada vez que cambia
+  useEffect(() => {
+    onMessageRef.current = onMessage;
+  }, [onMessage]);
+
+  useEffect(() => {
+    // 1. Validaciones previas: SSR, ID nulo o socket deshabilitado
+    if (typeof window === "undefined" || !gpsDeviceId || !enabled) {
+      return;
+    }
+
+    // 2. Importación dinámica de SockJS (necesaria en Next.js para evitar errores de 'window is undefined')
+    import("sockjs-client").then((SockJSModule) => {
+      const SockJS = SockJSModule.default;
+      const SocketURL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3050/ws";
+
+      // 3. Configuración del Cliente STOMP
+      const client = new Client({
+        webSocketFactory: () => new SockJS(SocketURL),
+        reconnectDelay: 5000,
+        debug: (str) => {
+            // Puedes comentar esto en producción para limpiar la consola
+            console.log("STOMP:", str)
+        },
+        
+        onConnect: () => {
+          console.log(`✅ Conectado a WebSocket (Dispositivo: ${gpsDeviceId})`);
+          
+          // Suscripción al canal específico
+          client.subscribe(`/topic/gps/${gpsDeviceId}`, (msg: IMessage) => {
+            if (msg.body) {
+              try {
+                const data: GpsTelemetria = JSON.parse(msg.body);
+                // Usamos la referencia para llamar a la función más reciente
+                onMessageRef.current(data);
+              } catch (error) {
+                console.error("Error parseando telemetría:", error);
+              }
             }
-            return;
-        }
+          });
+        },
 
-        let isMounted = true;
+        onStompError: (frame) => {
+          console.error("❌ Error STOMP:", frame);
+        },
+      });
 
-        const connect = async () => {
-            if (!isMounted) return;
+      // 4. Activar conexión
+      stompClient.current = client;
+      client.activate();
+    });
 
-            const SockJS = (await import("sockjs-client")).default;
-            const url = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3050/ws";
-
-            const socket = new SockJS(url);
-
-            const client = new Client({
-                webSocketFactory: () => socket as any,
-
-                // Heartbeat (algunos servers requieren esto)
-                heartbeatIncoming: 10000,
-                heartbeatOutgoing: 10000,
-
-                debug: (msg) => console.log("STOMP:", msg),
-
-                onConnect: () => {
-                    if (!isMounted) return;
-
-                    console.log("✅ Conectado al WebSocket");
-
-                    client.subscribe(`/topic/gps/${gpsDeviceId}`, (msg: IMessage) => {
-                        if (msg.body) {
-                            try {
-                                const data = JSON.parse(msg.body);
-                                onMessageRef.current(data);
-                            } catch (e) {
-                                console.error("❌ Error parseando JSON:", e);
-                            }
-                        }
-                    });
-                },
-
-                onStompError: (err) => {
-                    console.error("❌ Error STOMP:", err);
-                },
-
-                onWebSocketClose: () => {
-                    if (!isMounted) return;
-
-                    console.log("⚠ WebSocket cerrado: reintentando en 3s…");
-
-                    if (reconnectTimer.current) {
-                        clearTimeout(reconnectTimer.current);
-                    }
-
-                    reconnectTimer.current = setTimeout(() => {
-                        connect();
-                    }, 3000);
-                }
-            });
-
-            stompClientRef.current = client;
-            client.activate();
-        };
-
-        connect();
-
-        return () => {
-            isMounted = false;
-
-            console.log("🧹 Limpiando WebSocket...");
-
-            if (reconnectTimer.current) {
-                clearTimeout(reconnectTimer.current);
-            }
-
-            if (stompClientRef.current) {
-                stompClientRef.current.deactivate();
-                stompClientRef.current = null;
-            }
-        };
-    }, [gpsDeviceId, enabled]);
+    // 5. Cleanup: Se ejecuta al desmontar o cambiar de ID
+    return () => {
+      if (stompClient.current) {
+        stompClient.current.deactivate();
+        stompClient.current = null;
+        console.log("❌ Desconectado de WebSocket");
+      }
+    };
+  }, [gpsDeviceId, enabled]); // Quitamos 'onMessage' de aquí para evitar reconexiones infinitas
 }
