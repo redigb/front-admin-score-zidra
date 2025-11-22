@@ -7,7 +7,6 @@ import { useLastTelemetriaByDevice } from "@/hooks/use-fetch-telemetria";
 import { Dispositivo } from "@/interface/dispositivos";
 
 import {
-
     Search,
     Loader2,
     Wifi,

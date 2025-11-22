@@ -1,112 +1,93 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
-// Asegúrate de que apunte a tu backend real
-const API_URL = process.env.PRIVATE_API_URL || "http://localhost:3050/api";
+const API_URL = process.env.PRIVATE_API_URL;
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
-) {
+// Obligamos a definir la variable de entorno en producción
+if (!API_URL) {
+  throw new Error("PRIVATE_API_URL is missing in environment variables");
+}
+
+export async function GET(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   return handleRequest(req, await params);
 }
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
-) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   return handleRequest(req, await params);
 }
 
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
-) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   return handleRequest(req, await params);
 }
 
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
-) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   return handleRequest(req, await params);
 }
 
 async function handleRequest(req: NextRequest, params: { path: string[] }) {
   const { path } = params;
-  // 1. Debug de Cookies
-  const cookieStore = await cookies();
-  const allCookies = cookieStore.getAll();
-  //console.log(`🔍 [Proxy] Petición a: /${path.join("/")}`);
-  //console.log(`🍪 [Proxy] Cookies disponibles: [${allCookies.map(c => c.name).join(", ")}]`);
-  // INTENTO DE RECUPERACIÓN
-  let token = cookieStore.get("access_token")?.value;
 
-  if (!token) {
-    token = cookieStore.get("token")?.value;
-  }
-  // MODIFICACIÓN: Token opcional para debugging
-  // Ya no bloqueamos si no hay token.
-  if (!token) {
-    //console.warn("⚠️ [Proxy] No se encontró token, pero se enviará la petición sin auth (Modo Debug).");
-    // Comentado para permitir el paso sin token:
-    // return NextResponse.json({ error: "No token found in cookies" }, { status: 401 });
-  }
-  // 2. Construir URL
+  // Cookie → Token
+  const cookieStore = await cookies();
+  let token =
+    cookieStore.get("access_token")?.value ||
+    cookieStore.get("token")?.value ||
+    null;
+
+  // Construir URL destino
   const destinationUrl = `${API_URL}/${path.join("/")}${req.nextUrl.search}`;
-  // 3. Configurar Headers
-  const headers: HeadersInit = {
-    "Content-Type": "application/json",
-  };
-  // Solo agregamos el header Authorization SI existe el token
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
+
+  // Armamos headers
+  const headers: HeadersInit = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
   const fetchOptions: RequestInit = {
     method: req.method,
     headers,
   };
-  // 4. Body
+
+  // ------------ 🔥 LECTURA DE BODY SEGURA (FUNCIONA EN PRODUCCIÓN) ------------
   if (req.method !== "GET" && req.method !== "HEAD") {
     try {
-      const body = await req.json();
-      fetchOptions.body = JSON.stringify(body);
-    } catch (e) {
-      // ignore empty body
+      const clone = req.clone();        // <-- clave en producción
+      const body = await clone.json();
+
+      if (body && Object.keys(body).length > 0) {
+        fetchOptions.body = JSON.stringify(body);
+        headers["Content-Type"] = "application/json";
+      }
+    } catch (err) {
+      // Sin body → NO agregamos Content-Type
     }
   }
+  // ---------------------------------------------------------------------------
 
   try {
-    // 5. Llamada al Backend
     const response = await fetch(destinationUrl, fetchOptions);
 
-    // PASO CLAVE: Leemos el texto primero para evitar errores de parseo
-    const bodyText = await response.text();
+    // ----- Lectura robusta del body del backend -----
+    const raw = await response.text();
+    let data: any = null;
 
-    let data = null;
-    if (bodyText) {
+    if (raw.trim() !== "") {
       try {
-        data = JSON.parse(bodyText);
-      } catch (e) {
-        // Si falla el parseo (ej: el backend devolvió texto plano "OK"), 
-        // devolvemos el texto tal cual o null.
-        console.warn("⚠️ [Proxy] La respuesta no es un JSON válido:", bodyText);
-        data = { message: bodyText };
+        data = JSON.parse(raw);
+      } catch {
+        console.warn("⚠️ Backend no devolvió JSON. Respuesta:", raw);
+        data = { message: raw };
       }
     }
 
+    // Devolver tal cual cuando hay error
     if (!response.ok) {
       return NextResponse.json(data, { status: response.status });
     }
 
-    // Si data es null (cuerpo vacío) devolvemos un objeto vacío o null
-    return NextResponse.json(data || {}, { status: 200 });
+    // Si no hay cuerpo → enviamos {}
+    return NextResponse.json(data ?? {}, { status: 200 });
 
-  } catch (error) {
-    console.error("💥 [Proxy] Error:", error);
-    return NextResponse.json(
-      { error: "Proxy Error" },
-      { status: 502 }
-    );
+  } catch (err) {
+    console.error("💥 [Proxy] Error:", err);
+    return NextResponse.json({ error: "Proxy Error" }, { status: 502 });
   }
 }
