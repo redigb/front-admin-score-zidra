@@ -77,17 +77,10 @@ function LoginContent() {
   return (
     // CONTENEDOR PANTALLA COMPLETA
     <div className="min-h-screen w-full flex bg-white overflow-hidden font-sans">
-      
-      {/* ========================================================
-          IZQUIERDA: TARJETA FLOTANTE (Floating Card)
-          Ocupa el 45% del ancho en desktop, pero flota con márgenes.
-         ======================================================== */}
       <div className="hidden lg:flex w-[48%] h-screen p-6 relative z-10">
         <div className="w-full h-full rounded-[40px] overflow-hidden relative shadow-2xl shadow-emerald-900/20 border border-emerald-500/10">
-          
           {/* Fondo Base */}
           <div className="absolute inset-0 bg-[#042f2e]"></div> {/* Un verde muy oscuro casi negro para contraste */}
-
           {/* Mesh Gradient Animado (Verde ZidraScore) */}
           <div className="absolute top-[-20%] left-[-20%] w-[600px] h-[600px] bg-emerald-500 rounded-full blur-[120px] opacity-40 mix-blend-screen animate-pulse-slow"></div>
           <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-teal-600 rounded-full blur-[100px] opacity-30 mix-blend-screen"></div>
@@ -113,7 +106,7 @@ function LoginContent() {
             <div className="space-y-4">
                 <h2 className="text-5xl font-bold leading-tight tracking-tight">
                   ZidraScore <br/> 
-                  <span className="text-emerald-200">Intelligence.</span>
+                  <span className="text-emerald-200"></span>
                 </h2>
                 <p className="text-emerald-100/80 text-lg leading-relaxed max-w-md font-light">
                   Gestión de riesgo crediticio y monitoreo de activos en una sola plataforma unificada.
