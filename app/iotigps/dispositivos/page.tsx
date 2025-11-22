@@ -170,6 +170,7 @@ export default function IoTDashboard() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+
     try {
       if (editingId) {
         await dispositivosService.update(editingId, formData);
@@ -178,11 +179,19 @@ export default function IoTDashboard() {
         await dispositivosService.create(formData);
         toast.success("Dispositivo registrado");
       }
+
       setIsModalOpen(false);
       setEditingId(null);
+
       if (refetch) refetch();
-    } catch (error) {
-      toast.error("Error al guardar cambios");
+
+    } catch (error: any) {
+      const msg =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Error al guardar cambios";
+
+      toast.error(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -233,8 +242,8 @@ export default function IoTDashboard() {
                   key={f}
                   onClick={() => setFilter(f as any)}
                   className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 ${filter === f
-                      ? "bg-white text-blue-600 shadow-sm ring-1 ring-black/5"
-                      : "text-slate-500 hover:text-blue-600 hover:bg-blue-50/50"
+                    ? "bg-white text-blue-600 shadow-sm ring-1 ring-black/5"
+                    : "text-slate-500 hover:text-blue-600 hover:bg-blue-50/50"
                     }`}
                 >
                   {f === "ALL" ? "Todos" : f}
@@ -522,8 +531,8 @@ function DeviceCard({ device, index, isExpanded, onToggle, onEdit, onDelete }: D
                 {[1, 2, 3, 4].map(bar => (
                   <div key={bar}
                     className={`w-1.5 rounded-sm transition-all ${isOnline && bar <= (signalStrength > 75 ? 4 : signalStrength > 50 ? 3 : 2)
-                        ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]'
-                        : 'bg-slate-200'
+                      ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]'
+                      : 'bg-slate-200'
                       }`}
                     style={{ height: `${bar * 25}%` }}
                   />

@@ -24,9 +24,14 @@ export const dispositivosService = {
     // 🔹 Crear un dispositivo nuevo
     // NextApi enviará esto a /api/proxy/ioti-gps (POST), el route handler tomará el body y lo pasará al backend
     async create(data: DispositivoCreate): Promise<Dispositivo> {
-        const res = await nextApi.post<Dispositivo>("/ioti-gps", data);
-        return res.data;
+        try {
+            const res = await nextApi.post<Dispositivo>("/ioti-gps", data);
+            return res.data;
+        } catch (err: any) {
+            throw err.response?.data || err;
+        }
     },
+
 
     // 🔹 Actualizar dispositivo
     async update(id: number, data: DispositivoCreate): Promise<Dispositivo> {
