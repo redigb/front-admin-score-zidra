@@ -1,79 +1,47 @@
 "use client";
 
-
-
 import { useState, useEffect } from "react";
-
 import dynamic from "next/dynamic";
-
 import { useDispositivos } from "@/hooks/use-fetch-dipositivos";
-
 import { useLastTelemetriaByDevice } from "@/hooks/use-fetch-telemetria";
-
 import { Dispositivo } from "@/interface/dispositivos";
 
 import {
 
     Search,
-
     Loader2,
-
     Wifi,
-
     WifiOff,
-
     Zap,
-
     Activity,
-
     MapPin,
-
     Battery,
-
     Signal,
-
     Smartphone,
-
     Radio,
-
     Clock,
-
     Cpu,
-
     Navigation,
-
     Layers
 
 } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
-
 import { Card } from "@/components/ui/card";
-
 import { Button } from "@/components/ui/button";
-
 import { Badge } from "@/components/ui/badge";
-
 import { useGpsWebSocket } from "@/hooks/useGpsWebSocket";
-
 import { GpsTelemetria } from "@/interface/telemetria-dispostivo";
-
 import { ScrollArea } from "@/components/ui/scroll-area"; // Asegúrate de tener este o usa un div con overflow-auto
 
 
 
 // --- Cargas Dinámicas (Sin cambios funcionales) ---
-
 const MapContainer = dynamic(() => import("react-leaflet").then((mod) => mod.MapContainer), { ssr: false });
-
 const TileLayer = dynamic(() => import("react-leaflet").then((mod) => mod.TileLayer), { ssr: false });
-
 const Marker = dynamic(() => import("react-leaflet").then((mod) => mod.Marker), { ssr: false });
-
 const Popup = dynamic(() => import("react-leaflet").then((mod) => mod.Popup), { ssr: false });
-
 const Tooltip = dynamic(() => import("react-leaflet").then((mod) => mod.Tooltip), { ssr: false });
-
 const DevicePopup = dynamic(() => import("@/components/my_components/map/DevicePopup").then((mod) => ({ default: mod.DevicePopup })), { ssr: false });
 
 
@@ -81,101 +49,64 @@ const DevicePopup = dynamic(() => import("@/components/my_components/map/DeviceP
 export default function MapaDispositivos() {
 
     const { data: dispositivos = [], isLoading: loadingDispositivos } = useDispositivos();
-
     const [selectedDevice, setSelectedDevice] = useState<Dispositivo | null>(null);
-
     const [searchTerm, setSearchTerm] = useState("");
-
     const [breathingIcon, setBreathingIcon] = useState<any>(null);
-
     const [isClient, setIsClient] = useState(false);
 
-
-
     // Lógica de Cliente y WebSockets (Intacta)
-
     useEffect(() => {
-
         setIsClient(true);
-
         if (typeof window !== 'undefined' && !document.getElementById('leaflet-css')) {
 
             const link = document.createElement('link');
-
             link.id = 'leaflet-css';
-
             link.rel = 'stylesheet';
-
             link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-
             link.integrity = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=';
-
             link.crossOrigin = '';
-
             document.head.appendChild(link);
-
         }
-
     }, []);
 
 
-
     useEffect(() => {
-
         if (!isClient) return;
-
         import("@/components/my_components/map/DevicePopup").then((mod) => {
-
             setBreathingIcon(() => mod.createBreathingIcon);
-
         });
-
     }, [isClient]);
 
 
 
     useEffect(() => {
-
         if (!selectedDevice && dispositivos.length > 0) {
-
             setSelectedDevice(dispositivos[0]);
-
         }
-
     }, [dispositivos, selectedDevice]);
-
 
 
     const { data: ultimaTelemetria, isLoading: loadingTelemetria } = useLastTelemetriaByDevice(selectedDevice?.id ?? 0);
 
 
-
     const filteredDevices = dispositivos.filter((d) =>
-
         d.deviceCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-
         d.imei.toLowerCase().includes(searchTerm.toLowerCase()) ||
-
         d.modelo.toLowerCase().includes(searchTerm.toLowerCase())
-
     );
 
-
-
     const [useWebSocket, setUseWebSocket] = useState(false);
-
     const [liveTelemetria, setLiveTelemetria] = useState<GpsTelemetria | null>(null);
 
 
-
-    useGpsWebSocket(selectedDevice?.id ?? null, (t) => setLiveTelemetria(t), useWebSocket);
-
+    useGpsWebSocket(
+        selectedDevice?.id ?? null,
+        (tele) => setLiveTelemetria(tele),
+        useWebSocket // boolean
+    );
 
 
     const currentTelemetria = liveTelemetria || ultimaTelemetria;
-
-
-
     if (!isClient) return <div className="flex h-screen w-full items-center justify-center bg-slate-50"><Loader2 className="h-10 w-10 animate-spin text-blue-600" /></div>;
 
 

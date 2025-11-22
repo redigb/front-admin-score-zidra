@@ -1,4 +1,3 @@
-//hooks/useGpsWebSocket.ts
 "use client";
 
 import { useEffect, useRef } from "react";
@@ -10,47 +9,99 @@ export function useGpsWebSocket(
     onMessage: (telemetria: GpsTelemetria) => void,
     enabled: boolean
 ) {
-    const stompClient = useRef<Client | null>(null);
+    const stompClientRef = useRef<Client | null>(null);
+    const reconnectTimer = useRef<NodeJS.Timeout | null>(null);
+    const onMessageRef = useRef(onMessage);
+
+    // Mantiene onMessage estable
+    useEffect(() => {
+        onMessageRef.current = onMessage;
+    }, [onMessage]);
 
     useEffect(() => {
+        if (!enabled || !gpsDeviceId || typeof window === "undefined") {
+            // Si no hay ID o no está habilitado, desconectar.
+            if (stompClientRef.current) {
+                stompClientRef.current.deactivate();
+                stompClientRef.current = null;
+            }
+            return;
+        }
 
-        if (typeof window === 'undefined') return;
-        if (!gpsDeviceId || !enabled) return;
+        let isMounted = true;
 
-        import('sockjs-client').then((SockJSModule) => {
-            const SockJS = SockJSModule.default;
-            const SocketURL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3050/ws";
-            const socket = new SockJS(SocketURL);
-            
+        const connect = async () => {
+            if (!isMounted) return;
+
+            const SockJS = (await import("sockjs-client")).default;
+            const url = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3050/ws";
+
+            const socket = new SockJS(url);
+
             const client = new Client({
                 webSocketFactory: () => socket as any,
-                reconnectDelay: 5000,
-                debug: (str) => console.log("STOMP:", str),
+
+                // Heartbeat (algunos servers requieren esto)
+                heartbeatIncoming: 10000,
+                heartbeatOutgoing: 10000,
+
+                debug: (msg) => console.log("STOMP:", msg),
+
                 onConnect: () => {
-                    console.log("✅ Conectado a WebSocket");
+                    if (!isMounted) return;
+
+                    console.log("✅ Conectado al WebSocket");
 
                     client.subscribe(`/topic/gps/${gpsDeviceId}`, (msg: IMessage) => {
                         if (msg.body) {
-                            const data: GpsTelemetria = JSON.parse(msg.body);
-                            onMessage(data);
+                            try {
+                                const data = JSON.parse(msg.body);
+                                onMessageRef.current(data);
+                            } catch (e) {
+                                console.error("❌ Error parseando JSON:", e);
+                            }
                         }
                     });
                 },
-                onStompError: (frame) => {
-                    console.error("❌ Error STOMP:", frame);
+
+                onStompError: (err) => {
+                    console.error("❌ Error STOMP:", err);
                 },
+
+                onWebSocketClose: () => {
+                    if (!isMounted) return;
+
+                    console.log("⚠ WebSocket cerrado: reintentando en 3s…");
+
+                    if (reconnectTimer.current) {
+                        clearTimeout(reconnectTimer.current);
+                    }
+
+                    reconnectTimer.current = setTimeout(() => {
+                        connect();
+                    }, 3000);
+                }
             });
 
-            stompClient.current = client;
+            stompClientRef.current = client;
             client.activate();
-        });
+        };
 
-        // Cleanup
+        connect();
+
         return () => {
-            if (stompClient.current) {
-                stompClient.current.deactivate();
-                console.log("❌ Desconectado de WebSocket");
+            isMounted = false;
+
+            console.log("🧹 Limpiando WebSocket...");
+
+            if (reconnectTimer.current) {
+                clearTimeout(reconnectTimer.current);
+            }
+
+            if (stompClientRef.current) {
+                stompClientRef.current.deactivate();
+                stompClientRef.current = null;
             }
         };
-    }, [gpsDeviceId, enabled, onMessage]);
+    }, [gpsDeviceId, enabled]);
 }

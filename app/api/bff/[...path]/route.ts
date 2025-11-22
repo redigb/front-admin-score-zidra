@@ -80,14 +80,30 @@ async function handleRequest(req: NextRequest, params: { path: string[] }) {
     // 5. Llamada al Backend
     const response = await fetch(destinationUrl, fetchOptions);
 
-    const data = response.status === 204 ? null : await response.json();
+    // PASO CLAVE: Leemos el texto primero para evitar errores de parseo
+    const bodyText = await response.text();
+
+    let data = null;
+    if (bodyText) {
+      try {
+        data = JSON.parse(bodyText);
+      } catch (e) {
+        // Si falla el parseo (ej: el backend devolvió texto plano "OK"), 
+        // devolvemos el texto tal cual o null.
+        console.warn("⚠️ [Proxy] La respuesta no es un JSON válido:", bodyText);
+        data = { message: bodyText };
+      }
+    }
 
     if (!response.ok) {
       return NextResponse.json(data, { status: response.status });
     }
-    return NextResponse.json(data, { status: 200 });
+
+    // Si data es null (cuerpo vacío) devolvemos un objeto vacío o null
+    return NextResponse.json(data || {}, { status: 200 });
+
   } catch (error) {
-    // console.error("💥 [Proxy] Error:", error);
+    console.error("💥 [Proxy] Error:", error);
     return NextResponse.json(
       { error: "Proxy Error" },
       { status: 502 }
